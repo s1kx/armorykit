@@ -6,6 +6,9 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/urfave/cli"
+
+	"github.com/s1kx/armory-kit/armory"
+	"github.com/s1kx/armory-kit/config"
 )
 
 const (
@@ -16,14 +19,6 @@ var (
 	Version   string
 	BuildTime string
 )
-
-// // appContextFunc is a function that receives the application config in addition to the cli context.
-// type appContextFunc func(c *cli.Context, conf *config) error
-//
-// // Helper function to pass the application config to a cli function.
-// func (f appContextFunc) WithConfig(conf *config) func(c *cli.Context) error {
-// 	return func(c *cli.Context) error { return f(c, conf) }
-// }
 
 func main() {
 	app := &cli.App{
@@ -76,8 +71,8 @@ func initApplication(c *cli.Context) error {
 	}
 
 	// Load configuration
-	var conf config
-	err := loadConfig(configPath, &conf)
+	var conf config.Config
+	err := config.Load(configPath, &conf)
 	if err != nil {
 		return err
 	}
@@ -89,38 +84,35 @@ func initApplication(c *cli.Context) error {
 }
 
 func launchCmd(c *cli.Context) error {
-	conf := c.App.Metadata["config"].(config)
+	conf := c.App.Metadata["config"].(config.Config)
 
-	// Get profile
+	// Get profile.
 	if !c.IsSet("profile-key") {
 		return errors.New("Missing --profile-key flag")
 	}
 	profileKey := c.String("profile-key")
-	profile, ok := conf.Profiles[profileKey]
-	if !ok {
-		return errors.New("invalid profile name, check your config")
+	profile, err := conf.GetProfile(profileKey)
+	if err != nil {
+		return err
 	}
 
-	// Create armory instance
-	settings := armorySettings{
-		Bitcoind: conf.Bitcoind,
-		Profile:  profile,
-	}
-	armory, err := NewArmoryInstance(settings)
+	// Create armory instance.
+	ac, err := armory.NewInstance(profile)
 	if err != nil {
 		logrus.Fatalf("Error creating Armory instance: %s", err)
 		return nil
 	}
 
-	// Start armory
-	if err = armory.Start(); err != nil {
+	// Start armory.
+	if err = ac.Start(); err != nil {
 		logrus.Fatalf("Error starting Armory: %s", err)
 	}
 
-	// Show output from armory, blocks until execution is over
-	armory.PrintOutput()
+	// Show output from armory, blocks until execution is over.
+	ac.PrintOutput()
 
-	if err = armory.WaitForShutdown(); err != nil {
+	// Wait until armory has shut down.
+	if err = ac.WaitForShutdown(); err != nil {
 		logrus.Errorf("Armory exited with error: %s", err)
 		return nil
 	}

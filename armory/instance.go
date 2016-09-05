@@ -1,4 +1,4 @@
-package main
+package armory
 
 import (
 	"bufio"
@@ -11,31 +11,25 @@ import (
 	"sync"
 
 	"github.com/Sirupsen/logrus"
+
+	"github.com/s1kx/armory-kit/config"
 )
 
-type armorySettings struct {
-	Bitcoind bitcoindSettings
-	Profile  profileSettings
-}
-
-type ArmoryInstance struct {
-	settings armorySettings
+type Instance struct {
+	profile *config.Profile
 
 	cmd    *exec.Cmd
 	stdout io.ReadCloser
 	stderr io.ReadCloser
 }
 
-func NewArmoryInstance(settings armorySettings) (*ArmoryInstance, error) {
+func NewInstance(profile *config.Profile) (*Instance, error) {
 	// Build Command
-	armoryFlags := armoryProfileFlags(&settings)
+	armoryFlags := armoryFlags(profile)
 	armoryCmd := []string{"armory"}
 	armoryCmd = append(armoryCmd, armoryFlags...)
 
-	args := []string{"-xc", strings.Join(armoryCmd, " ")}
-	args = append(args, armoryFlags...)
-	fmt.Printf("Shell args: %v\n", args)
-	cmd := exec.Command("/bin/sh", args...)
+	cmd := exec.Command("/bin/sh", "-xc", strings.Join(armoryCmd, " "))
 
 	// Read stdout and stderr from command
 	stdout, err := cmd.StdoutPipe()
@@ -47,22 +41,23 @@ func NewArmoryInstance(settings armorySettings) (*ArmoryInstance, error) {
 		return nil, err
 	}
 
-	c := &ArmoryInstance{
-		settings: settings,
-		cmd:      cmd,
-		stdout:   stdout,
-		stderr:   stderr,
+	c := &Instance{
+		profile: profile,
+
+		cmd:    cmd,
+		stdout: stdout,
+		stderr: stderr,
 	}
 	return c, nil
 }
 
 // Start launches the Armory instance.
-func (c *ArmoryInstance) Start() error {
+func (c *Instance) Start() error {
 	return c.cmd.Start()
 }
 
 // Stop sends a TERM signal to the Armory instance.
-func (c *ArmoryInstance) Stop() error {
+func (c *Instance) Stop() error {
 	// Get Armory process
 	process := c.cmd.Process
 	if process == nil {
@@ -75,7 +70,7 @@ func (c *ArmoryInstance) Stop() error {
 }
 
 // PrintOutput prints the output of stdout/stderr from Armory to the logger.
-func (c *ArmoryInstance) PrintOutput() {
+func (c *Instance) PrintOutput() {
 	wg := &sync.WaitGroup{}
 
 	pipes := []struct {
@@ -98,11 +93,11 @@ func (c *ArmoryInstance) PrintOutput() {
 
 // WaitForShutdown waits until the process finishes.
 // This function should be called after PrintOutput has completed.
-func (c *ArmoryInstance) WaitForShutdown() error {
+func (c *Instance) WaitForShutdown() error {
 	return c.cmd.Wait()
 }
 
-func (c *ArmoryInstance) printPipeOutput(label string, pipe io.Reader) {
+func (c *Instance) printPipeOutput(label string, pipe io.Reader) {
 	rd := bufio.NewScanner(pipe)
 
 	for rd.Scan() {
@@ -112,20 +107,20 @@ func (c *ArmoryInstance) printPipeOutput(label string, pipe io.Reader) {
 	}
 }
 
-func armoryProfileFlags(s *armorySettings) []string {
+func armoryFlags(p *config.Profile) []string {
 	// Map of flags to be passed to armory
 	flagMap := map[string]string{
-		"--datadir":         s.Profile.ArmoryDataDir,
-		"--satoshi-datadir": s.Bitcoind.DataDir,
+		"--datadir":         p.ProfileSettings.ArmoryDataDir,
+		"--satoshi-datadir": p.BitcoindSettings.DataDir,
 	}
 
 	// Create array of flags from map
-	flags := armoryFlagsFromMap(flagMap)
+	flags := flagsFromMap(flagMap)
 
 	return flags
 }
 
-func armoryFlagsFromMap(flagMap map[string]string) []string {
+func flagsFromMap(flagMap map[string]string) []string {
 	// Sort keys alphabetically to avoid random argument order
 	keys := make([]string, 0, len(flagMap))
 	for k, _ := range flagMap {
