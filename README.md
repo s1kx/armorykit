@@ -1,4 +1,4 @@
-# Armory Launcher
+# Armory Kit
 
 A utility to use different armory profiles, which are used to separate
 wallets and connect to different nodes.

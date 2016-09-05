@@ -1,2 +1,8 @@
-package: github.com/s1kx/armory-launcher
-import: []
+package: github.com/s1kx/armory-kit
+import:
+- package: github.com/Sirupsen/logrus
+  version: ^0.10.0
+- package: github.com/BurntSushi/toml
+  version: ^v0.2.0
+- package: github.com/urfave/cli
+  version: ^v2
