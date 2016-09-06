@@ -1,4 +1,4 @@
-APPNAME=armory-kit
+APPNAME=armorykit
 SOURCEDIRS := $(glide novendor)
 SOURCES := $(shell find $(SOURCEDIRS) -name '*.go')
 
@@ -19,10 +19,10 @@ LDFLAGS_RELEASE=-ldflags "-s -w ${BUILD_FLAGS}"
 all: debug release
 
 debug: $(SOURCES)
-	go build ${GCFLAGS_DEBUG} ${LDFLAGS_DEBUG} -o bin/debug/${APPNAME}
+	go build ${GCFLAGS_DEBUG} ${LDFLAGS_DEBUG} -o bin/debug/${APPNAME} ./cmd/armorykit
 
 release: $(SOURCES)
-	go build ${GCFLAGS_RELEASE} ${LDFLAGS_RELEASE} -a -o bin/release/${APPNAME}
+	go build ${GCFLAGS_RELEASE} ${LDFLAGS_RELEASE} -a -o bin/release/${APPNAME} ./cmd/armorykit
 	strip bin/release/${APPNAME}
 
 .PHONY: install

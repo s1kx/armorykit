@@ -1,4 +1,4 @@
-package: github.com/s1kx/armory-kit
+package: github.com/s1kx/armorykit
 import:
 - package: github.com/Sirupsen/logrus
   version: ^0.10.0
