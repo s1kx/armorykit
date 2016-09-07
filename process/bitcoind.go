@@ -8,13 +8,14 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/Sirupsen/logrus"
 
 	"github.com/s1kx/armorykit/config"
 )
 
-const BitcoindBinary = "bitcoind"
+const bitcoindBinary = "bitcoind"
 
 type BitcoindProcess struct {
 	profile *config.Profile
@@ -27,7 +28,7 @@ type BitcoindProcess struct {
 func NewBitcoindProcess(profile *config.Profile) (*BitcoindProcess, error) {
 	// Build Command
 	flags := bitcoindFlags(profile)
-	shellCmd := fmt.Sprintf("%s %s", BitcoindBinary, strings.Join(flags, " "))
+	shellCmd := fmt.Sprintf("%s %s", bitcoindBinary, strings.Join(flags, " "))
 	cmd := exec.Command("/bin/sh", "-xc", shellCmd)
 
 	// Read stdout and stderr from command
@@ -60,10 +61,13 @@ func (c *BitcoindProcess) Stop() error {
 	// Get Armory process
 	process := c.cmd.Process
 	if process == nil {
-		return errors.New("armory is not running")
+		return errors.New("bitcoind is not running")
 	}
 
-	// TO-DO: Send TERM signal to initiate shutdown
+	// Send SIGINT signal to initiate graceful shutdown
+	if err := process.Signal(syscall.SIGINT); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -109,6 +113,7 @@ func bitcoindFlags(p *config.Profile) []string {
 	flagList := FlagList{
 		{"--conf", p.BitcoindSettings.ConfigFile},
 		{"--datadir", p.ProfileSettings.ArmoryDataDir},
+		{"--daemon", "0"},
 	}
 
 	flags := flagList.StringList()

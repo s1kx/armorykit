@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/Sirupsen/logrus"
 	"github.com/urfave/cli"
 
 	"github.com/s1kx/armorykit/cmd"
@@ -38,11 +39,13 @@ func runLaunchCmd(ctx *cli.Context) error {
 	// Run launcher.
 	l, err := launcher.New(profile)
 	if err != nil {
+		logrus.Fatalf("launcher: %s", err)
 		return err
 	}
 
 	err = l.Run()
 	if err != nil {
+		logrus.Fatalf("launcher: %s", err)
 		return err
 	}
 

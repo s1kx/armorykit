@@ -8,13 +8,14 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/Sirupsen/logrus"
 
 	"github.com/s1kx/armorykit/config"
 )
 
-const ArmoryBinary = "armory"
+const armoryBinary = "armory"
 
 type ArmoryProcess struct {
 	profile *config.Profile
@@ -27,7 +28,7 @@ type ArmoryProcess struct {
 func NewArmoryProcess(profile *config.Profile) (*ArmoryProcess, error) {
 	// Build Command
 	flags := armoryFlags(profile)
-	shellCmd := fmt.Sprintf("%s %s", ArmoryBinary, strings.Join(flags, " "))
+	shellCmd := fmt.Sprintf("%s %s", armoryBinary, strings.Join(flags, " "))
 	cmd := exec.Command("/bin/sh", "-xc", shellCmd)
 
 	// Read stdout and stderr from command
@@ -63,7 +64,8 @@ func (c *ArmoryProcess) Stop() error {
 		return errors.New("armory is not running")
 	}
 
-	// TO-DO: Send TERM signal to initiate shutdown
+	// Send SIGINT signal to initiate graceful shutdown
+	process.Signal(syscall.SIGINT)
 
 	return nil
 }
