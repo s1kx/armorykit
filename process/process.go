@@ -26,11 +26,18 @@ type Flag struct {
 }
 
 func (f Flag) Dashed(dash string) string {
-	name := f.Name
-	if !strings.HasPrefix(name, "-") {
-		name = fmt.Sprintf("-%s", name)
+	var flag string
+	if strings.HasPrefix(f.Name, "-") {
+		flag = f.Name
+	} else {
+		flag = fmt.Sprintf("-%s", f.Name)
 	}
-	return fmt.Sprintf("%s=%s", name, f.Value)
+
+	// Return flag as -flag if it's value is empty, otherwise -flag=value
+	if f.Value != "" {
+		flag = fmt.Sprintf("%s=%s", flag, f.Value)
+	}
+	return flag
 }
 
 func (f Flag) String() string {

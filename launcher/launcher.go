@@ -62,7 +62,6 @@ func (l *Launcher) Run() error {
 		if err := l.bitcoind.ProcessAndWait(); err != nil {
 			logrus.Errorf("launcher: %s", err)
 		}
-		logrus.Debug("bitcoind has exited")
 
 		quit <- struct{}{}
 		wg.Done()
@@ -74,7 +73,6 @@ func (l *Launcher) Run() error {
 		if err := l.armory.ProcessAndWait(); err != nil {
 			logrus.Errorf("launcher: %s", err)
 		}
-		logrus.Debug("armory has exited")
 
 		quit <- struct{}{}
 		wg.Done()

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -51,6 +52,10 @@ func NewArmoryProcess(profile *config.Profile) (*ArmoryProcess, error) {
 	return c, nil
 }
 
+func (c *ArmoryProcess) Process() *os.Process {
+	return c.cmd.Process
+}
+
 // Start launches the Armory instance.
 func (c *ArmoryProcess) Start() error {
 	return c.cmd.Start()
@@ -64,8 +69,10 @@ func (c *ArmoryProcess) Stop() error {
 		return errors.New("armory is not running")
 	}
 
-	// Send SIGINT signal to initiate graceful shutdown
-	process.Signal(syscall.SIGINT)
+	// Send signal to initiate graceful shutdown
+	if err := process.Signal(syscall.SIGTERM); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -108,10 +115,17 @@ func (c *ArmoryProcess) printPipeOutput(label string, pipe io.Reader) {
 }
 
 func armoryFlags(p *config.Profile) []string {
-	flags := FlagList{
+	flags := []string{}
+	flagList := FlagList{
+		// Defaults
+		{"--tor", ""},
+		{"--netlog", ""},
+
+		// Profile Settings
 		{"--datadir", p.ProfileSettings.ArmoryDataDir},
 		{"--satoshi-datadir", p.BitcoindSettings.DataDir},
 	}
+	flags = append(flags, flagList.StringList()...)
 
-	return flags.StringList()
+	return flags
 }

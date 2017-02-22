@@ -1,4 +1,4 @@
-APPNAME=armorykit
+APPNAME = armorykit
 SOURCEDIRS := $(glide novendor)
 SOURCES := $(shell find $(SOURCEDIRS) -name '*.go')
 

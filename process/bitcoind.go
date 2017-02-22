@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -51,6 +52,10 @@ func NewBitcoindProcess(profile *config.Profile) (*BitcoindProcess, error) {
 	return c, nil
 }
 
+func (c *BitcoindProcess) Process() *os.Process {
+	return c.cmd.Process
+}
+
 // Start launches the Armory instance.
 func (c *BitcoindProcess) Start() error {
 	return c.cmd.Start()
@@ -64,8 +69,8 @@ func (c *BitcoindProcess) Stop() error {
 		return errors.New("bitcoind is not running")
 	}
 
-	// Send SIGINT signal to initiate graceful shutdown
-	if err := process.Signal(syscall.SIGINT); err != nil {
+	// Send signal to initiate graceful shutdown
+	if err := process.Signal(syscall.SIGTERM); err != nil {
 		return err
 	}
 
@@ -110,13 +115,15 @@ func (c *BitcoindProcess) printPipeOutput(label string, pipe io.Reader) {
 }
 
 func bitcoindFlags(p *config.Profile) []string {
+	// Default flags
+	//flags := []string{"-daemon"}
+	flags := []string{}
 	flagList := FlagList{
-		{"--conf", p.BitcoindSettings.ConfigFile},
-		{"--datadir", p.ProfileSettings.ArmoryDataDir},
-		{"--daemon", "0"},
+		{"-daemon", "0"},
+		{"-conf", p.BitcoindSettings.ConfigFile},
+		{"-datadir", p.BitcoindSettings.DataDir},
 	}
-
-	flags := flagList.StringList()
+	flags = append(flags, flagList.StringList()...)
 
 	// Add flags from bitcoind config
 	flags = append(flags, p.BitcoindSettings.Flags...)
